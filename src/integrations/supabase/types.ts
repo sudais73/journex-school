@@ -445,6 +445,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      my_referrer: { Args: never; Returns: string }
       referral_username_exists: {
         Args: { _username: string }
         Returns: boolean
