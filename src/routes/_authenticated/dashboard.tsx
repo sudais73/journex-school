@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -60,6 +60,18 @@ function Dashboard() {
   const { data: notifications } = useNotifications(uid);
   const { data: enrollments } = useEnrollments(uid);
   const { data: certificates } = useCertificates(uid);
+
+  // Members who confirmed their email after signing up still need their profile,
+  // wallet, role and referral link created from the registration data we stored.
+  useEffect(() => {
+    if (!uid || profileLoading || profile) return;
+    const registration = (user?.user_metadata as { registration?: Record<string, unknown> })
+      ?.registration;
+    if (!registration) return;
+    supabase.rpc("complete_registration", { _payload: registration }).then(({ error }) => {
+      if (!error) queryClient.invalidateQueries({ queryKey: ["profile", uid] });
+    });
+  }, [uid, profile, profileLoading, user, queryClient]);
 
   const isStudent = (roles ?? []).includes("partner") || (enrollments ?? []).length > 0;
   const isAdmin = (roles ?? []).includes("admin");

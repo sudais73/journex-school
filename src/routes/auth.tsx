@@ -101,12 +101,13 @@ function AuthPage() {
     }
     setLoading(true);
     try {
+      const { password: _pw, ...registration } = parsed.data;
       const { error } = await supabase.auth.signUp({
         email: parsed.data.email,
         password: parsed.data.password,
         options: {
           emailRedirectTo: window.location.origin,
-          data: { first_name: parsed.data.first_name, last_name: parsed.data.last_name },
+          data: { registration },
         },
       });
       if (error) throw error;
@@ -119,7 +120,7 @@ function AuthPage() {
       }
 
       const { error: rpcError } = await supabase.rpc("complete_registration", {
-        _payload: { ...parsed.data, password: undefined },
+        _payload: registration,
       });
       if (rpcError) throw rpcError;
 
