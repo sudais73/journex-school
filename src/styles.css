@@ -118,6 +118,12 @@
 .dark {
   --background: oklch(0.129 0.042 264.695);
   --foreground: oklch(0.984 0.003 247.858);
+  --navy: oklch(0.22 0.07 262);
+  --navy-foreground: oklch(0.98 0.005 250);
+  --gold: oklch(0.79 0.14 82);
+  --gold-foreground: oklch(0.22 0.07 262);
+  --success: oklch(0.68 0.13 155);
+  --surface: oklch(0.2 0.04 264);
   --card: oklch(0.208 0.042 265.755);
   --card-foreground: oklch(0.984 0.003 247.858);
   --popover: oklch(0.208 0.042 265.755);
@@ -158,5 +164,22 @@
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
   }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
+  }
+}
+
+@utility section-shell {
+  margin-inline: auto;
+  width: 100%;
+  max-width: 76rem;
+  padding-inline: 1.5rem;
 }
