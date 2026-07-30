@@ -225,7 +225,10 @@ function CompensationRules({
 }) {
   const queryClient = useQueryClient();
 
-  async function update(id: string, patch: Record<string, unknown>) {
+  async function update(
+    id: string,
+    patch: { points?: number; depth?: number; is_active?: boolean },
+  ) {
     const { error } = await supabase.from("compensation_rules").update(patch).eq("id", id);
     if (error) return toast.error(error.message);
     toast.success("Rule updated");
