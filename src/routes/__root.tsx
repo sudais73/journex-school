@@ -79,20 +79,24 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Journex — English & Arabic Learning Journey" },
+      { title: "Journex | Learn English & Arabic in Ethiopia" },
       {
         name: "description",
         content:
-          "Journex is an education and leadership network offering English and Arabic learning journeys with a referral reward system.",
+          "Journex offers structured English and Arabic learning journeys, expert teachers, and a rewarding referral network. Your journey begins here.",
       },
       { name: "author", content: "Journex" },
-      { property: "og:title", content: "Journex — English & Arabic Learning Journey" },
+      { property: "og:title", content: "Journex | Learn English & Arabic in Ethiopia" },
       {
         property: "og:description",
-        content: "Learn English & Arabic, grow your team, and earn rewards with Journex.",
+        content: "Journex offers structured English and Arabic learning journeys, expert teachers, and a rewarding referral network. Your journey begins here.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Journex | Learn English & Arabic in Ethiopia" },
+      { name: "twitter:description", content: "Journex offers structured English and Arabic learning journeys, expert teachers, and a rewarding referral network. Your journey begins here." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/81fe9f9f-04f6-48e4-b132-952281446c0e/id-preview-e763448e--6cf20807-7e92-4ea4-993a-3603b8705e66.lovable.app-1785426557622.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/81fe9f9f-04f6-48e4-b132-952281446c0e/id-preview-e763448e--6cf20807-7e92-4ea4-993a-3603b8705e66.lovable.app-1785426557622.png" },
     ],
     links: [
       {

@@ -42,7 +42,7 @@ export const Route = createFileRoute("/")({
       {
         property: "og:description",
         content:
-          "Structured English and Arabic learning journeys, expert teachers, and a rewarding referral network.",
+          "Journex offers structured English and Arabic learning journeys, expert teachers, and a rewarding referral network. Your journey begins here.",
       },
     ],
   }),
