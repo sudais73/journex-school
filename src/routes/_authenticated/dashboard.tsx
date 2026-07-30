@@ -65,7 +65,7 @@ function Dashboard() {
   // wallet, role and referral link created from the registration data we stored.
   useEffect(() => {
     if (!uid || profileLoading || profile) return;
-    const registration = (user?.user_metadata as { registration?: Record<string, unknown> })
+    const registration = (user?.user_metadata as { registration?: Json })
       ?.registration;
     if (!registration) return;
     supabase.rpc("complete_registration", { _payload: registration }).then(({ error }) => {
