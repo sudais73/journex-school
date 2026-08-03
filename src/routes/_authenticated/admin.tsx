@@ -7,6 +7,8 @@ import {
   Settings2,
   Sparkles,
   Users,
+  GraduationCap,
+  Trophy,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -42,6 +44,7 @@ export const Route = createFileRoute("/_authenticated/admin")({
 const nav: NavItem[] = [
   { label: "Overview", to: "/admin", icon: LayoutDashboard },
   { label: "Members", to: "/admin", icon: Users },
+  { label: "Enrollments", to: "/admin", icon: GraduationCap },
   { label: "Packages", to: "/admin", icon: BookOpen },
   { label: "Payments", to: "/admin", icon: CreditCard },
   { label: "Compensation rules", to: "/admin", icon: Settings2 },
@@ -91,6 +94,33 @@ function AdminPage() {
     },
   });
 
+  const enrollments = useQuery({
+    queryKey: ["admin-enrollments"],
+    enabled: isAdmin,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("enrollments")
+        .select("*, packages(*)")
+        .order("created_at", { ascending: false })
+        .limit(300);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const points = useQuery({
+    queryKey: ["admin-points"],
+    enabled: isAdmin,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("point_events")
+        .select("user_id, point_type, points")
+        .limit(2000);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
   const { data: packages } = usePackages();
 
   if (isLoading) {
@@ -117,6 +147,29 @@ function AdminPage() {
     .filter((p) => p.status === "paid")
     .reduce((s, p) => s + Number(p.amount_etb), 0);
 
+  const memberList = members.data ?? [];
+  const enrollmentList = enrollments.data ?? [];
+  const pointList = points.data ?? [];
+
+  const memberById = new Map(memberList.map((m) => [m.id, m]));
+  const pointsByUser = new Map<string, { pjp: number; tjp: number }>();
+  for (const e of pointList) {
+    const cur = pointsByUser.get(e.user_id) ?? { pjp: 0, tjp: 0 };
+    if (e.point_type === "TJP") cur.tjp += e.points;
+    else cur.pjp += e.points;
+    pointsByUser.set(e.user_id, cur);
+  }
+  const enrollmentsByUser = new Map<string, typeof enrollmentList>();
+  for (const e of enrollmentList) {
+    enrollmentsByUser.set(e.user_id, [...(enrollmentsByUser.get(e.user_id) ?? []), e]);
+  }
+  const referralsByUser = new Map<string, number>();
+  for (const m of memberList) {
+    if (m.referred_by) referralsByUser.set(m.referred_by, (referralsByUser.get(m.referred_by) ?? 0) + 1);
+  }
+  const totalPoints = pointList.reduce((s, e) => s + e.points, 0);
+  const activeLearners = new Set(enrollmentList.map((e) => e.user_id)).size;
+
   return (
     <DashboardShell nav={nav} name={fullName(profile ?? undefined) || "Admin"} levelLabel="Administrator">
       <div className="mx-auto max-w-6xl space-y-6">
@@ -125,43 +178,117 @@ function AdminPage() {
           <h1 className="font-display text-3xl font-bold">Admin dashboard</h1>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <StatCard label="Members" value={members.data?.length ?? 0} icon={Users} />
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <StatCard label="Members" value={memberList.length} icon={Users} />
+          <StatCard label="Enrolled learners" value={activeLearners} icon={GraduationCap} />
+          <StatCard label="Enrollments" value={enrollmentList.length} icon={BookOpen} />
           <StatCard label="Packages" value={packages?.length ?? 0} icon={BookOpen} />
           <StatCard label="Payments" value={payments.data?.length ?? 0} icon={CreditCard} />
           <StatCard label="Revenue (paid)" value={formatEtb(totalRevenue)} icon={Sparkles} />
+          <StatCard label="Points awarded" value={totalPoints} icon={Trophy} />
         </div>
 
-        <Panel id="members" title="Members" description="Everyone registered on Journex">
+        <Panel
+          id="members"
+          title="Members"
+          description="Everyone registered on Journex, with their packages, team and points"
+        >
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Name</TableHead>
                   <TableHead>Username</TableHead>
+                  <TableHead>Email</TableHead>
                   <TableHead>Phone</TableHead>
                   <TableHead>Level</TableHead>
+                  <TableHead>Packages</TableHead>
+                  <TableHead>Referrals</TableHead>
+                  <TableHead>PJP / TJP</TableHead>
                   <TableHead>Joined</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {(members.data ?? []).map((m) => (
+                {memberList.map((m) => {
+                  const pts = pointsByUser.get(m.id) ?? { pjp: 0, tjp: 0 };
+                  const mine = enrollmentsByUser.get(m.id) ?? [];
+                  return (
                   <TableRow key={m.id}>
                     <TableCell className="font-medium">{fullName(m)}</TableCell>
                     <TableCell className="text-muted-foreground">@{m.referral_username}</TableCell>
+                    <TableCell className="text-muted-foreground">{m.email ?? "—"}</TableCell>
                     <TableCell className="text-muted-foreground">{m.phone ?? "—"}</TableCell>
                     <TableCell><Badge variant="secondary">{m.level}</Badge></TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {mine.length === 0
+                        ? "—"
+                        : mine
+                            .map((e) => `${e.packages?.language ?? ""} ${e.packages?.tier ?? ""}`.trim())
+                            .join(", ")}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">{referralsByUser.get(m.id) ?? 0}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {pts.pjp} / {pts.tjp}
+                    </TableCell>
                     <TableCell className="text-muted-foreground">
                       {new Date(m.created_at).toLocaleDateString()}
                     </TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
+                {memberList.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={9} className="text-center text-sm text-muted-foreground">
+                      No members yet.
+                    </TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </div>
         </Panel>
 
-        <Panel id="packages" title="Packages" description="Learning journeys and pricing">
+        <Panel id="enrollments" title="Enrollments" description="Who is learning what right now">
+          {enrollmentList.length === 0 ? (
+            <p className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+              No enrollments yet.
+            </p>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Member</TableHead>
+                    <TableHead>Package</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Progress</TableHead>
+                    <TableHead>Started</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {enrollmentList.map((e) => {
+                    const m = memberById.get(e.user_id);
+                    return (
+                      <TableRow key={e.id}>
+                        <TableCell className="font-medium">{m ? fullName(m) : "Unknown"}</TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {e.packages ? `${e.packages.language} · ${e.packages.tier}` : "—"}
+                        </TableCell>
+                        <TableCell><Badge variant="secondary">{e.status}</Badge></TableCell>
+                        <TableCell className="text-muted-foreground">{e.progress}%</TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {new Date(e.created_at).toLocaleDateString()}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </Panel>
+
+        <Panel id="packages" title="Packages" description="Learning journeys, pricing and uptake">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             {(packages ?? []).map((p) => (
               <div key={p.id} className="rounded-xl border border-border/70 p-4">
@@ -169,6 +296,9 @@ function AdminPage() {
                 <p className="font-semibold">{p.tier}</p>
                 <p className="mt-2 font-display text-xl font-bold">{formatEtb(p.price_etb)}</p>
                 <p className="text-xs text-muted-foreground">{p.pjp_reward} PJP</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {enrollmentList.filter((e) => e.package_id === p.id).length} enrolled
+                </p>
               </div>
             ))}
           </div>

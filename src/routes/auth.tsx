@@ -102,7 +102,7 @@ function AuthPage() {
     setLoading(true);
     try {
       const { password: _pw, ...registration } = parsed.data;
-      const { error } = await supabase.auth.signUp({
+      const { data: signUpData, error } = await supabase.auth.signUp({
         email: parsed.data.email,
         password: parsed.data.password,
         options: {
@@ -111,6 +111,15 @@ function AuthPage() {
         },
       });
       if (error) throw error;
+
+      // Supabase obfuscates duplicate signups: it returns a user with an empty
+      // identities array instead of an error.
+      if (signUpData.user && (signUpData.user.identities?.length ?? 0) === 0) {
+        toast.error("An account with this email already exists. Please log in instead.");
+        setIdentifier(parsed.data.email);
+        setMode("login");
+        return;
+      }
 
       const { data: session } = await supabase.auth.getSession();
       if (!session.session) {
